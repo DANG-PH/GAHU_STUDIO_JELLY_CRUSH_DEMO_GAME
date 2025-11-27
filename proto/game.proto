@@ -1,0 +1,54 @@
+syntax = "proto3";
+
+package game;
+
+enum ElementType {
+  BLOCKER = 0;
+  POLYOMINOS = 1;
+  EMPTY = 2;
+}
+
+enum ElementSubType {
+  BOX_BLOCKER = 0;
+  HYDRANT_BLOCKER = 1;
+}
+
+message GameElement {
+  ElementType elementType = 1;
+  ElementSubType elementSubType = 2;
+  int32 width = 3;
+  int32 height = 4;
+  string elementProps = 5; // "{}" hoặc json khác
+}
+
+message GameLevelData {
+  string gameName = 1;
+  string gameId = 2;
+  string levelId = 3;
+  int32 cols = 4;
+  int32 rows = 5;
+  repeated GameElement elements = 6;
+}
+
+message FindLevelRequest {
+  string levelId = 1;
+}
+
+message FindLevelResponse {
+  GameLevelData levelData = 1;
+}
+
+message CreateLevelRequest {
+  GameLevelData levelData = 1;
+}
+
+message CreateLevelResponse {
+  bool success = 1;
+  string message = 2;
+  GameLevelData levelData = 3; 
+}
+
+service GameLevelService {
+  rpc FindLevel(FindLevelRequest) returns (FindLevelResponse);
+  rpc CreateLevel(CreateLevelRequest) returns (CreateLevelResponse);
+}
