@@ -1,24 +1,28 @@
 import { Controller } from '@nestjs/common';
 import { GrpcMethod } from '@nestjs/microservices';
-import { RpcException } from '@nestjs/microservices';
-import { status } from '@grpc/grpc-js';
 import { GameService } from './game.service';
-import { GAME_LEVEL_SERVICE_NAME } from 'proto/game.pb';
-import type { FindLevelRequest, FindLevelResponse, CreateLevelRequest, CreateLevelResponse } from 'proto/game.pb';
+import type {
+  GetDataLevelRequest,
+  GetDataLevelResponse,
+  GetMatrixRequest,
+  GetMatrixResponse,
+  Matrix2D,
+} from 'proto/game.pb';
+import { GAME_SERVICE_NAME } from 'proto/game.pb';
 
 @Controller()
 export class GameController {
-  constructor(
-    private readonly gameService: GameService
-  ) {}
+  constructor(private readonly gameService: GameService) {}
 
-  @GrpcMethod(GAME_LEVEL_SERVICE_NAME, 'FindLevel')
-  async register(data: FindLevelRequest): Promise<FindLevelResponse> {
-    return this.gameService.findLevel(data);
+  @GrpcMethod(GAME_SERVICE_NAME, 'GetDataLevel')
+  async getDataLevel(data: GetDataLevelRequest): Promise<GetDataLevelResponse> {
+    const levelData = await this.gameService.getDataLevel(data.id);
+    return { levelData: levelData };
   }
 
-  @GrpcMethod(GAME_LEVEL_SERVICE_NAME, 'CreateLevel')
-  async getProfile(data: CreateLevelRequest) : Promise<CreateLevelResponse> {
-    return this.gameService.createLevel(data);
+  @GrpcMethod(GAME_SERVICE_NAME, 'GetMatrix')
+  async getMatrix(data: GetMatrixRequest): Promise<GetMatrixResponse> {
+    const matrix: Matrix2D[] = await this.gameService.getMatrix(data.type);
+    return { matrix };
   }
 }

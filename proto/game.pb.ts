@@ -11,82 +11,254 @@ import { Observable } from "rxjs";
 
 export const protobufPackage = "game";
 
+export enum ObstacleType {
+  WALL = 0,
+  FIRE = 1,
+  UNRECOGNIZED = -1,
+}
+
+export enum Direction {
+  NONE = 0,
+  TOP = 1,
+  RIGHT = 2,
+  BOTTOM = 3,
+  LEFT = 4,
+  UNRECOGNIZED = -1,
+}
+
+export enum ColorType {
+  GRAY = 0,
+  WHITE = 1,
+  BROWN = 2,
+  YELLOW = 3,
+  GOLD = 4,
+  ORANGE = 5,
+  RED = 6,
+  PINK = 7,
+  PURPLE = 8,
+  BLUE = 9,
+  CYAN = 10,
+  GREEN = 11,
+  UNRECOGNIZED = -1,
+}
+
+export enum BlockGimmickType {
+  LAYER = 0,
+  HIDDEN = 1,
+  LOCK = 2,
+  ICE = 3,
+  UNRECOGNIZED = -1,
+}
+
+export enum Difficulty {
+  NORMAL = 0,
+  HARD = 1,
+  SUPER_HARD = 2,
+  UNRECOGNIZED = -1,
+}
+
+/** CMS */
 export enum ElementType {
-  BLOCKER = 0,
-  POLYOMINOS = 1,
-  EMPTY = 2,
+  Block = 0,
+  Obstacle = 1,
   UNRECOGNIZED = -1,
 }
 
-export enum ElementSubType {
-  BOX_BLOCKER = 0,
-  HYDRANT_BLOCKER = 1,
-  UNRECOGNIZED = -1,
+export interface ObstacleData {
+  type: ObstacleType;
+  direction: Direction;
+  x: number;
+  y: number;
+  meta: { [key: string]: string };
 }
 
-export interface GameElement {
-  elementType: ElementType;
-  elementSubType: ElementSubType;
+export interface ObstacleData_MetaEntry {
+  key: string;
+  value: string;
+}
+
+export interface BlockGimmickData {
+  type: BlockGimmickType;
+  blocks: BlockData[];
+  count: number;
+}
+
+export interface BlockData {
+  type: number;
+  color: ColorType;
+  x: number;
+  y: number;
+  gimmick?: BlockGimmickData | undefined;
+}
+
+export interface BlockGroupData {
+  indexes: number[];
+}
+
+export interface LevelData {
   width: number;
   height: number;
-  /** "{}" hoặc json khác */
-  elementProps: string;
+  difficulty: Difficulty;
+  blocks: BlockData[];
+  obstacles: ObstacleData[];
+  groups: BlockGroupData[];
+  time_limit: number;
 }
 
-export interface GameLevelData {
-  gameName: string;
-  gameId: string;
-  levelId: string;
+/** bổ sung */
+export interface Matrix2D {
   cols: number;
   rows: number;
-  elements: GameElement[];
+  values: number[];
 }
 
-export interface FindLevelRequest {
-  levelId: string;
+export interface GetDataLevelRequest {
+  id: number;
 }
 
-export interface FindLevelResponse {
-  levelData: GameLevelData | undefined;
+export interface GetDataLevelResponse {
+  levelData: LevelData | undefined;
+}
+
+export interface GetMatrixRequest {
+  type: number;
+}
+
+export interface GetMatrixResponse {
+  matrix: Matrix2D[];
+}
+
+export interface BlockType {
+  type: number;
+  name: string;
+  cell_matrix: Matrix2D[];
+}
+
+export interface BlockTypeList {
+  items: BlockType[];
+}
+
+export interface ObstacleDataDefault {
+  type: ObstacleType;
+}
+
+export interface ObstacleDataDefaultList {
+  items: ObstacleDataDefault[];
+}
+
+export interface GetAllElementDefaultRequest {
+  elementType: ElementType;
+}
+
+export interface GetAllElementDefaultResponse {
+  blocks?: BlockTypeList | undefined;
+  obstacles?: ObstacleDataDefaultList | undefined;
+}
+
+export interface SetElementDefaultRequest {
+  elementType: ElementType;
+  blocks?: BlockType | undefined;
+  obstacles?: ObstacleDataDefault | undefined;
+}
+
+export interface SetElementDefaultResponse {
+  success: boolean;
 }
 
 export interface CreateLevelRequest {
-  levelData: GameLevelData | undefined;
+  levelData: LevelData | undefined;
 }
 
 export interface CreateLevelResponse {
   success: boolean;
-  message: string;
-  levelData: GameLevelData | undefined;
 }
 
 export const GAME_PACKAGE_NAME = "game";
 
-export interface GameLevelServiceClient {
-  findLevel(request: FindLevelRequest, metadata?: Metadata): Observable<FindLevelResponse>;
+export interface GameServiceClient {
+  /** client gọi get level để lấy data từ level bất kì */
 
-  createLevel(request: CreateLevelRequest, metadata?: Metadata): Observable<CreateLevelResponse>;
+  getDataLevel(request: GetDataLevelRequest, metadata?: Metadata): Observable<GetDataLevelResponse>;
+
+  /** client gọi để lấy ma trận của khối */
+
+  getMatrix(request: GetMatrixRequest, metadata?: Metadata): Observable<GetMatrixResponse>;
 }
 
-export interface GameLevelServiceController {
-  findLevel(request: FindLevelRequest, metadata?: Metadata): Observable<FindLevelResponse>;
+export interface GameServiceController {
+  /** client gọi get level để lấy data từ level bất kì */
 
-  createLevel(request: CreateLevelRequest, metadata?: Metadata): Observable<CreateLevelResponse>;
+  getDataLevel(request: GetDataLevelRequest, metadata?: Metadata): Observable<GetDataLevelResponse>;
+
+  /** client gọi để lấy ma trận của khối */
+
+  getMatrix(request: GetMatrixRequest, metadata?: Metadata): Observable<GetMatrixResponse>;
 }
 
-export function GameLevelServiceControllerMethods() {
+export function GameServiceControllerMethods() {
   return function (constructor: Function) {
-    const grpcMethods: string[] = ["findLevel", "createLevel"];
+    const grpcMethods: string[] = ["getDataLevel", "getMatrix"];
     for (const method of grpcMethods) {
       const descriptor: any = Reflect.getOwnPropertyDescriptor(constructor.prototype, method);
-      GrpcMethod("GameLevelService", method)(constructor.prototype[method], method, descriptor);
+      GrpcMethod("GameService", method)(constructor.prototype[method], method, descriptor);
     }
     const grpcStreamMethods: string[] = [];
     for (const method of grpcStreamMethods) {
       const descriptor: any = Reflect.getOwnPropertyDescriptor(constructor.prototype, method);
-      GrpcStreamMethod("GameLevelService", method)(constructor.prototype[method], method, descriptor);
+      GrpcStreamMethod("GameService", method)(constructor.prototype[method], method, descriptor);
     }
   };
 }
 
-export const GAME_LEVEL_SERVICE_NAME = "GameLevelService";
+export const GAME_SERVICE_NAME = "GameService";
+
+export interface CMSServiceClient {
+  /** cms frontend gọi để lấy default block, sau đó design level */
+
+  getAllElementDefault(
+    request: GetAllElementDefaultRequest,
+    metadata?: Metadata,
+  ): Observable<GetAllElementDefaultResponse>;
+
+  /** cms frontend gọi để insert default element mới vào database */
+
+  setElementDefault(request: SetElementDefaultRequest, metadata?: Metadata): Observable<SetElementDefaultResponse>;
+
+  /** cms frontend gọi để insert level mới vào database */
+
+  createLevel(request: CreateLevelRequest, metadata?: Metadata): Observable<CreateLevelResponse>;
+}
+
+export interface CMSServiceController {
+  /** cms frontend gọi để lấy default block, sau đó design level */
+
+  getAllElementDefault(
+    request: GetAllElementDefaultRequest,
+    metadata?: Metadata,
+  ): Observable<GetAllElementDefaultResponse>;
+
+  /** cms frontend gọi để insert default element mới vào database */
+
+  setElementDefault(request: SetElementDefaultRequest, metadata?: Metadata): Observable<SetElementDefaultResponse>;
+
+  /** cms frontend gọi để insert level mới vào database */
+
+  createLevel(request: CreateLevelRequest, metadata?: Metadata): Observable<CreateLevelResponse>;
+}
+
+export function CMSServiceControllerMethods() {
+  return function (constructor: Function) {
+    const grpcMethods: string[] = ["getAllElementDefault", "setElementDefault", "createLevel"];
+    for (const method of grpcMethods) {
+      const descriptor: any = Reflect.getOwnPropertyDescriptor(constructor.prototype, method);
+      GrpcMethod("CMSService", method)(constructor.prototype[method], method, descriptor);
+    }
+    const grpcStreamMethods: string[] = [];
+    for (const method of grpcStreamMethods) {
+      const descriptor: any = Reflect.getOwnPropertyDescriptor(constructor.prototype, method);
+      GrpcStreamMethod("CMSService", method)(constructor.prototype[method], method, descriptor);
+    }
+  };
+}
+
+export const CMS_SERVICE_NAME = "CMSService";

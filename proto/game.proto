@@ -2,53 +2,177 @@ syntax = "proto3";
 
 package game;
 
+enum ObstacleType {
+    WALL = 0;
+    FIRE = 1;
+}
+
+enum Direction {
+    NONE = 0;  
+    TOP = 1;
+    RIGHT = 2;
+    BOTTOM = 3;
+    LEFT = 4;
+}
+
+enum ColorType {
+    GRAY = 0;
+    WHITE = 1;
+    BROWN = 2;
+    YELLOW = 3;
+    GOLD = 4;
+    ORANGE = 5;
+    RED = 6;
+    PINK = 7;
+    PURPLE = 8;
+    BLUE = 9;
+    CYAN = 10;
+    GREEN = 11;
+}
+
+enum BlockGimmickType {
+    LAYER = 0;
+    HIDDEN = 1;
+    LOCK = 2;
+    ICE = 3;
+}
+
+enum Difficulty {
+    NORMAL = 0;
+    HARD = 1;
+    SUPER_HARD = 2;
+}
+
+message ObstacleData {
+    ObstacleType type = 1;
+    Direction direction = 2;
+    int32 x = 3;
+    int32 y = 4;
+    map<string, string> meta = 5;
+}
+
+message BlockGimmickData {
+    BlockGimmickType type = 1;
+    repeated BlockData blocks = 2;
+    int32 count = 3;
+}
+
+message BlockData {
+    int32 type = 1;
+    ColorType color = 2;
+    int32 x = 3;
+    int32 y = 4;
+    optional BlockGimmickData gimmick = 5;
+}
+
+message BlockGroupData {
+    repeated int32 indexes = 1;
+}
+
+message LevelData {
+    int32 width = 1;
+    int32 height = 2;
+    Difficulty difficulty = 3;
+    repeated BlockData blocks = 4;
+    repeated ObstacleData obstacles = 5;
+    repeated BlockGroupData groups = 6;
+    int32 time_limit = 7;
+}
+
+// bổ sung
+message Matrix2D {
+  uint32 cols = 1;
+  uint32 rows = 2;
+  repeated double values = 3 [packed=true];
+}
+
+message GetDataLevelRequest {
+    int32 id = 1;
+}
+
+message GetDataLevelResponse {
+    LevelData levelData = 1;
+}
+
+message GetMatrixRequest {
+    int32 type = 1;
+}
+
+message GetMatrixResponse {
+    repeated Matrix2D matrix = 1;
+}
+
+
+service GameService {
+  // client gọi get level để lấy data từ level bất kì
+  rpc GetDataLevel(GetDataLevelRequest) returns (GetDataLevelResponse);
+
+  // client gọi để lấy ma trận của khối 
+  rpc GetMatrix(GetMatrixRequest) returns (GetMatrixResponse);
+}
+
+// CMS
 enum ElementType {
-  BLOCKER = 0;
-  POLYOMINOS = 1;
-  EMPTY = 2;
+    Block = 0;
+    Obstacle = 1;
 }
 
-enum ElementSubType {
-  BOX_BLOCKER = 0;
-  HYDRANT_BLOCKER = 1;
+message BlockType {
+    int32 type = 1;
+    string name = 2;
+    repeated Matrix2D cell_matrix = 3;
 }
 
-message GameElement {
-  ElementType elementType = 1;
-  ElementSubType elementSubType = 2;
-  int32 width = 3;
-  int32 height = 4;
-  string elementProps = 5; // "{}" hoặc json khác
+message BlockTypeList {
+    repeated BlockType items = 1;
 }
 
-message GameLevelData {
-  string gameName = 1;
-  string gameId = 2;
-  string levelId = 3;
-  int32 cols = 4;
-  int32 rows = 5;
-  repeated GameElement elements = 6;
+message ObstacleDataDefault {
+    ObstacleType type = 1;
 }
 
-message FindLevelRequest {
-  string levelId = 1;
+message ObstacleDataDefaultList {
+    repeated ObstacleDataDefault items = 1;
 }
 
-message FindLevelResponse {
-  GameLevelData levelData = 1;
+message GetAllElementDefaultRequest {
+    ElementType elementType = 1;
+}
+
+message GetAllElementDefaultResponse {
+    oneof data {
+        BlockTypeList blocks = 1;
+        ObstacleDataDefaultList obstacles = 2;
+    }
+}
+
+message SetElementDefaultRequest {
+    ElementType elementType = 1;
+    oneof data {
+        BlockType blocks = 2;
+        ObstacleDataDefault obstacles = 3;
+    }
+}
+
+message SetElementDefaultResponse {
+    bool success = 1;
 }
 
 message CreateLevelRequest {
-  GameLevelData levelData = 1;
+    LevelData levelData = 1;
 }
 
 message CreateLevelResponse {
-  bool success = 1;
-  string message = 2;
-  GameLevelData levelData = 3; 
+    bool success = 1;
 }
 
-service GameLevelService {
-  rpc FindLevel(FindLevelRequest) returns (FindLevelResponse);
+service CMSService {
+  // cms frontend gọi để lấy default block, sau đó design level
+  rpc GetAllElementDefault(GetAllElementDefaultRequest) returns (GetAllElementDefaultResponse);
+
+  // cms frontend gọi để insert default element mới vào database
+  rpc SetElementDefault(SetElementDefaultRequest) returns (SetElementDefaultResponse);
+
+  // cms frontend gọi để insert level mới vào database 
   rpc CreateLevel(CreateLevelRequest) returns (CreateLevelResponse);
 }
